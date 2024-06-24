@@ -1,0 +1,34 @@
+<html>
+<head>
+    <title>注销成功</title>
+    <link rel="stylesheet" href="../static/layui/css/layui.css">
+</head>
+<body>
+</body>
+
+<script src="../static/js/api.js"></script>
+<script src="../static/layui/layui.js"></script>
+<script>
+    checkLogin();
+    layui.use(function() 
+    {
+        let layer = layui.layer;
+
+        get_req("/user/logout", "post", "").then(res => 
+        {
+            if (res.status === 200)
+            {
+                window.localStorage.setItem("accessToken", "");
+                window.localStorage.setItem("phone", "");
+                window.localStorage.setItem("id", "");
+                setTimeout(function() { document.location.href = '../index.html' }, 1000);
+                layer.msg('注销成功，即将跳转');
+                return;
+            }
+    
+            window.history.back(-1)
+        });
+    });
+    
+</script>
+</html>

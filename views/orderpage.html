@@ -1,0 +1,112 @@
+<html>
+<head>
+    <title>Title</title>
+    <link href="https://unpkg.com/layui@2.9.13/dist/css/layui.css" rel="stylesheet">
+    <script src="../static/js/jquery-3.4.1.js" type="text/javascript" charset="utf-8"></script>
+</head>
+<body>
+<div style="padding: 15px;">
+    <table class="layui-hide" id="test" lay-filter="demo"></table>
+    <script type="text/html" id="barDemo">
+    </script>
+
+</div>
+<script src="https://unpkg.com/layui@2.9.13/dist/layui.js"></script>
+<script src="../static/js/api.js"></script>
+<script>
+    checkLogin();
+
+    const searchParams = new URLSearchParams(window.location.search);
+    var cupboardId = searchParams.get("cup_id");
+    var name = window.localStorage.getItem("phone");
+    if (cupboardId === null || cupboardId === undefined)
+    {
+        window.alert("参数非法");
+        window.history.back(-1);
+    }
+    
+    // alert(name);
+    function renderTable(data) 
+    {
+        layui.use('table', function () {
+            let table = layui.table;
+            table.render({
+                elem: '#test'
+                , data
+                , cols: [[
+                    {field: 'id', width: 110, title: '订单编号', sort: true}
+                    ,{field: 'pobkId', width: 120, title: '充电宝编号', sort: true}
+                    ,{field: 'createTime', width: 200, title: '创建时间'}
+                    ,{field: 'finishTime', width: 200, title: '结束时间'}
+                    ,{field: 'cost', width: 120, title: '结算金额'}
+                    ,{field: 'status', width: 120, title: '订单状态'}
+                    ,{field: 'right', title: '操作', templet: function(d) 
+                    {
+                        if (d.status !== '已支付')
+                            return `<div><a class="layui-btn layui-btn-xs" lay-event="pay">归还</a></div>`
+                        
+                        return ``;
+                    }}
+                ]]
+                , page: false
+                , height: 298
+                , id: 'testTable'
+            });
+        });
+    }
+
+    function getOrders()
+    {
+        get_req(`/order/cupboard/${cupboardId}`, 'get', '').then(res => 
+        {
+            if (res.status === 200)
+            {
+                res.data.sort(function(a, b)
+                {
+                    if (a.status !== b.status)
+                        return a.status >= b.status ? -1 : 1;
+                    
+                    return a.createTime >= b.createTime ? -1 : 1;
+                });
+                renderTable(res.data);
+                return;
+            }
+
+            layui.use(function () {
+                layui.layer.msg("信息获取失败");
+            });
+        });
+    }
+    getOrders()
+
+    layui.use('table', function () {
+        var table = layui.table;
+        //监听工具条
+        table.on('tool(demo)', function (obj) 
+        {
+            let data = obj.data;
+            if (obj.event !== 'pay') 
+                return;
+            
+            layer.confirm('确定归还', function (index) 
+            {
+                console.log(data.id);
+                get_req(`/order/${data.id}`, 'put', '').then(res => 
+                {
+                    if (res.status === 200)
+                    {
+                        layer.close(index);
+                        layer.msg("归还成功");
+                        getOrders()
+                        return;
+                    }
+
+                    layer.msg(`归还失败: ${res.message}`);
+                });
+                // layer.alert("支付+查看ID : " + data.orderId + " 的行,顺便现在cup_id为"+cup_id+",用户名："+name+"pobkid="+data.orderPobkid);
+            });
+        });
+    });
+</script>
+</body>
+</html>
